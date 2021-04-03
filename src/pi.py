@@ -2,7 +2,7 @@
 from sympy import nsimplify,simplify, symbols, N,Rational,integrate, init_printing, latex, pprint, sqrt
 from sympy.abc import y
 from fractions import Fraction
-import math
+import math,os
 init_printing(use_latex="mathjax")
 # para imprimir de la potencia más pequeña a la mas grande
 #x = symbols('x',commutative=False)
@@ -11,9 +11,22 @@ def fact(n):
     for i in range(1,n+1):
         f*=i
     return f
+def pi_mc(n):
+    dividendo = Fraction(1,1)
+    exp = dividendo
+    for i in range(n):
+        dividendo *= Fraction(1,2) - i
+        exp = exp + ((dividendo * y**(i+1))/Rational(fact(i+1)))
+    exp = exp.subs(y,-y**2)
+    exp = integrate(exp,(y,0,Fraction(1,2)))
+    #print(latex(integrate(exp,(x,0,Fraction(1,2)))))
+    exp += -sqrt(3)/8
+    exp *= 12
+    return exp
 s = "\\documentclass{article}\n"
 s+= "\\usepackage{amsmath}"
 s+= "\\usepackage{graphicx}"
+s+= "\\usepackage[usenames]{color}"
 s+= "\\usepackage[utf8]{inputenc}\n"
 s+= "\\title{Aproximando $\\pi$}"
 s+= "\\author{Fernando Gerardo Flores García}\n"
@@ -32,9 +45,18 @@ s+= "\\end{center}\n\\begin{align*}\ny=(1-x^2)^\\frac{1}{2}\n"
 s+= "\\end{align*}\n"
 s+= "Notamos que podemos usar el teorema, "
 #***Menor complejidad al calcular el dividendo***
-def pi_mc(n):
+def pi_ltx(n):
     global s
-    s+= "apliquémoslo a los primeros 11 términos.\n"
+    s+= "apliquémoslo a los primeros "+str(n+1)+" términos.\n"
+    s+= "\\begin{flushleft}"
+    s+= "Veamos que la expresión $(1-x)^{n}$ con el teorema esta dado por:\n"
+    s+= "\\end{flushleft}\n"
+    s+= "\\begin{align*}\n"
+    s+= "(1-x)^{n} = 1+nx+\\frac{n(n-1)}{2!}x^{2}+\\frac{n(n-1)(n-2)}{3!}x^{3}+...\n"
+    s+= "\\end{align*}\n"
+    s+= "\\begin{flushleft}\n"
+    s+= "Sólo reemplazamos n por $\\frac{1}{2}$\n"
+    s+= "\\end{flushleft}\n"
     x = symbols('x',commutative=False)
     dividendo = Fraction(1,2)
     exp = Fraction(1,1)
@@ -42,9 +64,6 @@ def pi_mc(n):
     exp += Fraction(1,2)*y
     exp_l += Fraction(1,2)*x
     for i in range(n-1):
-        print(i)
-        pprint(str(dividendo)+"*"+str((Fraction(1,2) - Fraction(i+1,1))))
-        pprint(Fraction(i+1,1))
         dividendo *= (Fraction(1,2) - (i+1))
         exp_l = exp_l + ((dividendo * x**(i+2))/Rational(fact(i+2)))
         exp = exp + ((dividendo * y**(i+2))/Rational(fact(i+2)))
@@ -67,9 +86,10 @@ def pi_mc(n):
     s+= "\\subparagraph{Resultado}\n"
     s+= "\\includegraphics[width=0.5\\textwidth]{area_1.png}\n"
     s+= "\\begin{flushleft}\n"
-    s+= "Sabemos que el área es $\\frac{\pi}{12} + \\frac{\\sqrt{3}}{8}$ entonces lo reemplazamos.\n"
+    s+= "Sabemos que el área es $\\frac{\\pi}{12} + \\frac{\\sqrt{3}}{8}$ entonces lo reemplazamos por la integral."
+    s+= "del lado izquierdo e integramos el lado derecho para así poder despejar $\\pi$\n"
     s+= "\\end{flushleft}\n\\begin{flushleft}\n"
-    s+= "$\\frac{\\pi}{2}+\\frac{\\sqrt{3}}{8}= "+latex(exp)+"$\n"
+    s+= "$\\frac{\\pi}{12}+\\frac{\\sqrt{3}}{8}= "+latex(exp)+"$\n"
     s+= "\\end{flushleft}\n"
     s+= "\\section{Despejando $\\pi$}\n"
     s+= "$\\pi="+"12["+str(latex(exp))+"-\\frac{\\sqrt{3}}{8}]$\n"
@@ -81,12 +101,26 @@ def pi_mc(n):
     exp_l *= 12
     s+= ", $\\pi="+str(latex(exp))+"$\n"
     s+= "\\section{Aproximación final con "+str(n+1)+" Términos: }\n"
-    s+= str(N(exp,40))+"\n"
+    s+= str(N(exp,70))+"\n"
     return simplify(exp)
 #hasta 46
 #print(N(pi_menor_complejidad(100),160))
 #print(s)
-print(N(pi_mc(16),40))
+print(N(pi_ltx(4),70))
+s+= "\\section{Aproximación final con "+str(30)+" Términos: }\n"
+aux = str(N(pi_mc(30),70))
+s+= "\\definecolor{Micolor1}{RGB}{193,124,250}"
+s+= aux[0:2]+"\\textcolor{Micolor1}{"+aux[2:24]+"}"+aux[24:]+"\n"
+s+= "\\section{Aproximación final con "+str(40)+" Términos: }\n"
+s+= "\\definecolor{Micolor2}{RGB}{29,92,211}"
+aux= str(N(pi_mc(40),70))
+s+= aux[0:2]+"\\textcolor{Micolor2}{"+aux[2:29]+"}"+aux[29:]+"\n"
 s+= "\\end{document}"
-print(s)
+f = open ('Aproximando.tex','wb')
+f.write(s)
+f.close()
+tex_file_name = "Aproximando.tex";
+os.system("pdflatex " + tex_file_name);
+
+#print(s)
 #pprint(integrate(exp,(x,0,Fraction(1,2))))
